@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -17,8 +18,14 @@ from .api.v1.endpoints.cover_letters import router as cover_letters_router
 from .api.v1.endpoints.usage import router as usage_router
 
 
+IS_PRODUCTION = os.getenv("ENVIRONMENT", "development").lower() == "production"
+
 app = FastAPI(
     title="Prolance AI API",
+    description="AI-powered proposal and cover letter generator",
+    docs_url=None if IS_PRODUCTION else "/docs",
+    redoc_url=None if IS_PRODUCTION else "/redoc",
+    openapi_url=None if IS_PRODUCTION else "/openapi.json",
     version="0.1.0",
 )
 

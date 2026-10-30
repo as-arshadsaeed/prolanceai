@@ -1,4 +1,6 @@
+
 import httpx
+
 from fastapi import APIRouter, HTTPException, Request
 
 from ....schemas.schemas import ProposalRequest, ProposalResponse
@@ -61,4 +63,7 @@ async def create_proposal(
 
     except Exception:
         release_usage(ip, "proposals")
-        raise
+        raise HTTPException(
+            status_code=500,
+            detail="Proposal generation failed. Please try again.",
+        )

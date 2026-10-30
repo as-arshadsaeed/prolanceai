@@ -129,8 +129,9 @@ async def _generate_with_provider(request: CoverLetterRequest) -> str:
 
 
 
+
 @router.post("/generate", response_model=CoverLetterResponse)
-@limiter.limit("5/day")
+@limiter.limit("10/day")
 async def generate_cover_letter(
     request: Request,
     payload: CoverLetterRequest,
@@ -151,26 +152,33 @@ async def generate_cover_letter(
         httpx.ConnectError,
         httpx.HTTPStatusError,
         RuntimeError,
-    ) as exc:
-        # Keep your existing logging here, if desired.
-        # A demo fallback is still a successful response, so it counts.
-        content = _demo_cover_letter(payload)
+    ):
+        # Demo responses do not consume the daily usage quota.
+        release_usage(ip, "cover_letters")
 
         return CoverLetterResponse(
-            content=content,
+            content=_demo_cover_letter(payload),
             warnings=[
                 "Demo mode: the AI provider was unavailable. "
-                "This is a fallback draft."
+                "This fallback draft does not count toward your daily quota."
             ],
             demo_mode=True,
         )
 
     except Exception as exc:
         release_usage(ip, "cover_letters")
-        print(f"Cover letter generation error: {type(exc).__name__}: {exc}")
+
+        print(
+            f"Cover letter generation error: "
+            f"{type(exc).__name__}: {exc}"
+        )
+
         raise HTTPException(
             status_code=500,
             detail="Cover letter generation failed.",
         ) from exc
 
-    return CoverLetterResponse(content=content, demo_mode=False)
+    return CoverLetterResponse(
+        content=content,
+        demo_mode=False,
+    )
